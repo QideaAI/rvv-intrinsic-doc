@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef __COMMON__H__
+#define __COMMON__H__
 void gen_rand_1d(double *a, int n) {
   for (int i = 0; i < n; ++i)
     a[i] = (double)rand() / (double)RAND_MAX + (double)(rand() % 1000);
@@ -104,3 +106,22 @@ void init_array_one_2d(double **ar, int n, int m) {
     for (int j = 0; j < m; ++j)
       ar[i][j] = 1;
 }
+
+unsigned long read_perf_counter(void)
+{
+  unsigned long counter_value;
+#if defined(COUNT_INSTRET)
+#define PERF_METRIC "instruction"
+  asm volatile ("rdinstret %0" : "=r" (counter_value));
+#elif defined(COUNT_CYCLE)
+#define PERF_METRIC "cycle"
+  asm volatile ("rdcycle %0" : "=r" (counter_value));
+#else
+  // instret is also the default
+#define PERF_METRIC "instruction"
+  asm volatile ("rdinstret %0" : "=r" (counter_value));
+#endif
+  return counter_value;
+}
+
+#endif

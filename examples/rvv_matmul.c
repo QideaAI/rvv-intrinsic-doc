@@ -57,6 +57,14 @@ int main() {
   matmul_golden(A, B, golden, N, M, O);
   matmul(A, B, actual, N, M, O);
 
+  int count_start, count_end;
+  count_start = read_perf_counter();
+  printf("Performance counter start: %d\n", count_start);
+  count_end = read_perf_counter();
+  printf("Performance counter end: %d\n", count_end);
+  printf("Cycle count: %d\n", count_end - count_start);
+
+
   // compare
   puts(compare_2d(golden, actual, N, M) ? "pass" : "fail");
 }

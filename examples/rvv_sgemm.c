@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include "common.h"
 
 #define N 32
 
@@ -104,7 +105,15 @@ int main() {
   sgemm_golden();
   // vector
   memcpy(c_array, b_array, OUTPUT_LEN * sizeof(float));
+
+  int count_start, count_end;
+  count_start = read_perf_counter();
+  printf("Performance counter start: %d\n", count_start);
   sgemm_vec(MLEN, NLEN, KLEN, a_array, KLEN, b_array, NLEN, c_array, NLEN);
+  count_end = read_perf_counter();
+  printf("Performance counter end: %d\n", count_end);
+  printf("Cycle count: %d\n", count_end - count_start);
+
 
   int pass = 1;
   for (int i = 0; i < OUTPUT_LEN; i++) {
