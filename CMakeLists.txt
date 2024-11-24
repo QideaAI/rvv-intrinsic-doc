@@ -30,6 +30,8 @@ project(rvv-examples)
 #
 # subdirectories
 #
+include(CTest)
+
 add_definitions(-DCOUNT_CYCLE)
 file(GLOB SOURCE_FILES "${CMAKE_SOURCE_DIR}/examples/*.c")
 foreach(SOURCE_FILE ${SOURCE_FILES})
@@ -37,5 +39,6 @@ foreach(SOURCE_FILE ${SOURCE_FILES})
 	cmake_path(GET path STEM EXE_TARGET)
 	message("Adding target ${EXE_TARGET}")
 	add_executable(${EXE_TARGET} ${SOURCE_FILE})
+	add_test(NAME ${EXE_TARGET} COMMAND ${RISCV}/bin/spike --isa=rv64gcv_zicntr ${RISCV}/riscv64-unknown-elf/bin/pk ${EXE_TARGET})
 endforeach()
 
