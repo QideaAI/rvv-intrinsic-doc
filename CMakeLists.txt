@@ -18,8 +18,8 @@ set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR riscv64)
 
 # Find and configure the RISC-V toolchain
-set(CMAKE_C_FLAGS "-Wall -march=rv64gcv_zicntr -mabi=lp64d")
-set(CMAKE_CXX_FLAGS "-Wall -march=rv64gcv_zicntr -mabi=lp64d")
+set(CMAKE_C_FLAGS "-Wall -march=rv64gcv_zicntr_zvfh -mabi=lp64d")
+set(CMAKE_CXX_FLAGS "-Wall -march=rv64gcv_zicntr_zvfh -mabi=lp64d")
 
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
@@ -39,6 +39,6 @@ foreach(SOURCE_FILE ${SOURCE_FILES})
 	cmake_path(GET path STEM EXE_TARGET)
 	message("Adding target ${EXE_TARGET}")
 	add_executable(${EXE_TARGET} ${SOURCE_FILE})
-	add_test(NAME ${EXE_TARGET} COMMAND ${RISCV}/bin/spike --isa=rv64gcv_zicntr ${RISCV}/riscv64-unknown-elf/bin/pk ${EXE_TARGET})
+	add_test(NAME ${EXE_TARGET} COMMAND ${RISCV}/bin/spike --isa=rv64gcv_zicntr_zvfh ${RISCV}/riscv64-unknown-elf/bin/pk ${EXE_TARGET})
 endforeach()
 

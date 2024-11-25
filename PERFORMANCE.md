@@ -86,5 +86,5 @@ spike --isa=rv64gcv_zicntr pk build/rvv_sgemm
 
 You can also creat an instruction trace by
 ```bash
-spike --isa=rv64gcv_zicntr -l pk build/rvv_sgemm  2> trace.txt
+spike --isa=rv64gcv_zicntr_zvfh -l pk build/rvv_sgemm  2> trace.txt
 ```

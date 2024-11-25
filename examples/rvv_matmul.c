@@ -55,15 +55,20 @@ int main() {
   double **golden = alloc_array_2d(N, M);
   double **actual = alloc_array_2d(N, M);
   matmul_golden(A, B, golden, N, M, O);
-  matmul(A, B, actual, N, M, O);
 
+#ifdef COUNT_CYCLE
   int count_start, count_end;
   count_start = read_perf_counter();
-  printf("Performance counter start: %d\n", count_start);
+#endif
+
+  matmul(A, B, actual, N, M, O);
+
+#ifdef COUNT_CYCLE
   count_end = read_perf_counter();
+  printf("Performance counter start: %d\n", count_start);
   printf("Performance counter end: %d\n", count_end);
   printf("Cycle count: %d\n", count_end - count_start);
-
+#endif
 
   // compare
   puts(compare_2d(golden, actual, N, M) ? "pass" : "fail");
