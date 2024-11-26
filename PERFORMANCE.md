@@ -81,10 +81,17 @@ riscv64-unknown-elf-gcc examples/rvv_sgemm.c -o rvv_sgemm -mabi=lp64d -march=rv6
 The example's binary can be simulated using spike simulator with proxy kernel.
 
 ```bash
-spike --isa=rv64gcv_zicntr pk build/rvv_sgemm
+spike --isa=rv64gcv_zicntr_zvfh pk build/rvv_sgemm
 ```
 
 You can also creat an instruction trace by
 ```bash
 spike --isa=rv64gcv_zicntr_zvfh -l pk build/rvv_sgemm  2> trace.txt
+```
+
+By default, spike simulator uses VLEN = 128b as the SIMD width. In order to simulate a wider SIMD width,
+the 'zvl' specifier can be used. For example to simulate with 256b SIMD or 512b SIMD, the following can be used:
+```bash
+spike --isa=rv64gcv_zicntr_zvfh_zvl256b pk rvv_add
+spike --isa=rv64gcv_zicntr_zvfh_zvl512b pk rvv_add
 ```
