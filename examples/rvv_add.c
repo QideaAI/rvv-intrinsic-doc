@@ -4,13 +4,13 @@
 #include "common.h"
 
 #ifndef ARRAY_SIZE
-#define ARRAY_SIZE 2048
+    #define ARRAY_SIZE 2048
 #endif
 
-_Float16 A[ARRAY_SIZE];
-_Float16 B[ARRAY_SIZE];
+_Float16 A[ARRAY_SIZE] = {1.0f};
+_Float16 B[ARRAY_SIZE] = {1.0f};
 _Float16 C_golden[ARRAY_SIZE] = {0.f};
-_Float16 C_vec[ARRAY_SIZE] = {0.f};
+_Float16 C[ARRAY_SIZE] = {0.f};
 
 //golden scalar functioon
 void add_golden(_Float16 *a, _Float16 *b, _Float16 *c, int N) {
@@ -46,8 +46,9 @@ int main() {
     int i;
     int N = ARRAY_SIZE;
     for (i = 0; i < N; ++i) {
-        A[i] = rand() / (_Float16) RAND_MAX;
-        B[i] = rand() / (_Float16) RAND_MAX;
+        A[i] = (rand() / (float) RAND_MAX);
+        B[i] = (rand() / (float) RAND_MAX);
+        //printf("A: %f, B: %f\n", (float)A[i], (float)B[i]);
     }
 
     //check Vector size
@@ -63,7 +64,7 @@ int main() {
     count_start = read_perf_counter();
 #endif
 
-    add_vec(A, B, C_golden, N);
+    add_vec(A, B, C, N);
 
 #ifdef COUNT_CYCLE
     count_end = read_perf_counter();
@@ -72,4 +73,18 @@ int main() {
     printf("Cycle count: %d\n", count_end - count_start);
 #endif
 
+    int pass = 1;
+    for (int i = 0; i < N; i++) {
+        if (!fp16_eq(C_golden[i], C[i], 1e-5)) {
+        printf("index %d fail, %f=!%f\n", i, (float)C_golden[i], (float)C[i]);
+        pass = 0;
+        }
+    }
+    if (pass) {
+        for (i = 0; i < N; ++i) {
+            //printf("C %f\n", (float)C[i]);
+        }
+        printf("pass\n");
+    }
+    return (pass == 0);
 }
