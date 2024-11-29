@@ -25,6 +25,7 @@ set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+set(CMAKE_EXE_LINKER_FLAGS "-lm")
 
 project(rvv-examples)
 #
@@ -39,6 +40,7 @@ foreach(SOURCE_FILE ${SOURCE_FILES})
 	cmake_path(GET path STEM EXE_TARGET)
 	message("Adding target ${EXE_TARGET}")
 	add_executable(${EXE_TARGET} ${SOURCE_FILE})
+	target_link_libraries(${EXE_TARGET} m)
 	add_test(NAME ${EXE_TARGET} COMMAND ${RISCV}/bin/spike --isa=rv64gcv_zicntr_zvfh ${RISCV}/riscv64-unknown-elf/bin/pk ${EXE_TARGET})
 endforeach()
 

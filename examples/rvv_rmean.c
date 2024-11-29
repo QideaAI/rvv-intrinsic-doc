@@ -4,32 +4,46 @@
 #include "common.h"
 
 #ifndef ARRAY_SIZE
-    #define ARRAY_SIZE 2048
+    #define ARRAY_SIZE 256
 #endif
 
 _Float16 A[ARRAY_SIZE] = {1.0f};
-_Float16 B[ARRAY_SIZE] = {1.0f};
-_Float16 C_golden[ARRAY_SIZE] = {0.f};
-_Float16 C[ARRAY_SIZE] = {0.f};
+_Float16 C_golden;
+_Float16 C;
 
 //golden scalar function
-void add_golden(_Float16 *a, _Float16 *b, _Float16 *c, int N) {
+_Float16 rmean_golden(_Float16 *a, int N) {
     int i;
+	_Float16 s = 0.0f;
     for(i = 0; i < N; i ++) {
-        c[i] = a[i] + b[i];
+        s += a[i];
     }
+		
+    return (s/N);
 }
 
-//vector elementwise add function
-void add_vec(_Float16 *a, _Float16 *b, _Float16 *c, int N) {
-    for (size_t vl; N > 0; N -= vl, a += vl, b += vl, c += vl) {
+//vector rmean function
+_Float16 rmean_vec(_Float16 *a, int N) {
+    // set vlmax and initialize variables
+    size_t vlmax = __riscv_vsetvlmax_e16m1();
+    vfloat16m1_t vec_zero = __riscv_vfmv_v_f_f16m1(0, vlmax);
+    vfloat16m1_t vec_s = __riscv_vfmv_v_f_f16m1(0, vlmax);
+
+    //vector add
+    _Float16 len = (_Float16)N;
+    for (size_t vl; N > 0; N -= vl, a += vl) {
         vl = __riscv_vsetvl_e16m1(N);
         vfloat16m1_t vec_a = __riscv_vle16_v_f16m1(a, vl);
-        vfloat16m1_t vec_b = __riscv_vle16_v_f16m1(b, vl);
-
-        vfloat16m1_t vec_c = __riscv_vfadd_vv_f16m1(vec_a, vec_b, vl);
-        __riscv_vse16_v_f16m1(c, vec_c, vl);
+        vec_s = __riscv_vfadd_vv_f16m1(vec_a, vec_s, vl);
     }
+
+    //reduction add
+    vfloat16m1_t vec_sum;
+    vec_sum = __riscv_vfredusum_vs_f16m1_f16m1(vec_s, vec_zero, vlmax);
+
+    //generate scalar mean
+	_Float16 rmean = __riscv_vfmv_f_s_f16m1_f16(vec_sum)/len;
+	return rmean;
 }
 
 int fp16_eq(_Float16 reference, _Float16 actual, _Float16 relErr)
@@ -47,8 +61,7 @@ int main() {
     int N = ARRAY_SIZE;
     for (i = 0; i < N; ++i) {
         A[i] = (rand() / (float) RAND_MAX);
-        B[i] = (rand() / (float) RAND_MAX);
-        //printf("A: %f, B: %f\n", (float)A[i], (float)B[i]);
+        //printf("A: %f\n", (float)A[i]);
     }
 
     //check Vector size
@@ -56,7 +69,7 @@ int main() {
     printf("VLEN: %d\n", (int)vlmax);
 
     //compute golden
-    add_golden(A, B, C_golden, N);
+    C_golden = rmean_golden(A, N);
 
     //compute vec
 #ifdef COUNT_CYCLE
@@ -64,7 +77,7 @@ int main() {
     count_start = read_perf_counter();
 #endif
 
-    add_vec(A, B, C, N);
+    C = rmean_vec(A, N);
 
 #ifdef COUNT_CYCLE
     count_end = read_perf_counter();
@@ -74,17 +87,13 @@ int main() {
 #endif
 
     int pass = 1;
-    for (int i = 0; i < N; i++) {
-        if (!fp16_eq(C_golden[i], C[i], 1e-5)) {
-        printf("index %d fail, %f=!%f\n", i, (float)C_golden[i], (float)C[i]);
+    if (!fp16_eq(C_golden, C, 1e-3)) {
+        printf("fail, %f=!%f\n", (float)C_golden, (float)C);
         pass = 0;
-        }
     }
+    
     if (pass) {
-        for (i = 0; i < N; ++i) {
-            //printf("C %f\n", (float)C[i]);
-        }
-        printf("pass\n");
+        printf("pass, %f==%f\n", (float)C_golden, (float)C);
     }
     return (pass == 0);
 }

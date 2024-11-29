@@ -73,7 +73,7 @@ make
 
 Alternatively you can build each example directly by
 ```bash
-riscv64-unknown-elf-gcc examples/rvv_sgemm.c -o rvv_sgemm -mabi=lp64d -march=rv64gcv_zicntr
+riscv64-unknown-elf-gcc examples/rvv_sgemm.c -o rvv_sgemm -mabi=lp64d -march=rv64gcv_zicntr_zvfh -lm
 ```
 
 ## Run Examples
