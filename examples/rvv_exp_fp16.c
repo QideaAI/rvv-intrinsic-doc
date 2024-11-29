@@ -24,7 +24,6 @@ _Float16 RX[ARRAY_SIZE] = {1.0f};
 _Float16 Y_golden[ARRAY_SIZE] = {0.f};
 _Float16 Y[ARRAY_SIZE] = {0.f};
 
-
 #ifndef POLY_DEGREE
 #define POLY_DEGREE 7
 #elif (POLY_DEGREE > 7)
