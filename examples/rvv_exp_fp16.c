@@ -4,8 +4,7 @@
     This is the implementation the exponential function adopted from:
     https://fprox.substack.com/p/implementing-exp-using-risc-v
     
-    We implement the fp32 scalar and vector functions first. Then the fp16
-    scalar and vector functions.
+    We implement the fp16 scalar and vector functions in this file.
 */
 #include <math.h>
 #include <stddef.h>
@@ -17,7 +16,7 @@
 #include "common.h"
 
 #ifndef ARRAY_SIZE
-    #define ARRAY_SIZE 32
+    #define ARRAY_SIZE 1024
 #endif
 
 _Float16 X[ARRAY_SIZE] = {1.0f};
@@ -27,7 +26,7 @@ _Float16 Y[ARRAY_SIZE] = {0.f};
 
 
 #ifndef POLY_DEGREE
-#define POLY_DEGREE 5
+#define POLY_DEGREE 7
 #elif (POLY_DEGREE > 7)
 #error "POLY_DEGREE MUST NOT EXCEED 7"
 #endif
@@ -131,7 +130,7 @@ _Float16 exp_vec_fp16(_Float16 *x, _Float16 *y, _Float16 x_max, int N) {
     const _Float16 ln2 = 0x1.62e43p-1;    
     const _Float16 iln2 = 0x1.715476p0f;
 
-    const size_t vlmax = __riscv_vsetvlmax_e32m1(); 
+    const size_t vlmax = __riscv_vsetvlmax_e16m1(); 
     const vfloat16m1_t vln2 = __riscv_vfmv_v_f_f16m1(ln2, vlmax);
     const vfloat16m1_t viln2 = __riscv_vfmv_v_f_f16m1(iln2, vlmax);
 
@@ -153,7 +152,7 @@ _Float16 exp_vec_fp16(_Float16 *x, _Float16 *y, _Float16 x_max, int N) {
 
     size_t avl = N;
     while (avl > 0) {
-        size_t vl = __riscv_vsetvl_e32m1(avl);
+        size_t vl = __riscv_vsetvl_e16m1(avl);
         vfloat16m1_t vx = __riscv_vle16_v_f16m1(x, vl);
         vx = __riscv_vfsub(vx, x_max, vl);
 
@@ -249,8 +248,7 @@ int main() {
 #endif
 
     float esum = exp_vec_fp16(RX, Y, x_max, N);
-    printf("imp esum = %f\n", esum);
-
+    
 #ifdef COUNT_CYCLE
     count_end = read_perf_counter();
     printf("Performance counter start: %d\n", count_start);
@@ -258,6 +256,7 @@ int main() {
     printf("Cycle count: %d\n", count_end - count_start);
 #endif
 
+    printf("imp esum = %f\n", esum);
     pass = 1;
     for (int i = 0; i < N; i++) {
         if (!fp16_eq(Y_golden[i], Y[i], 1e-5)) {

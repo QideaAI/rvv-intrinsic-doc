@@ -4,8 +4,7 @@
     This is the implementation the exponential function adopted from:
     https://fprox.substack.com/p/implementing-exp-using-risc-v
     
-    We implement the fp32 scalar and vector functions first. Then the fp16
-    scalar and vector functions.
+    We implement the fp32 scalar and vector functions in this file.
 */
 #include <math.h>
 #include <stddef.h>
@@ -17,7 +16,7 @@
 #include "common.h"
 
 #ifndef ARRAY_SIZE
-    #define ARRAY_SIZE 32
+    #define ARRAY_SIZE 1024
 #endif
 
 float X[ARRAY_SIZE] = {1.0f};
@@ -247,7 +246,6 @@ int main() {
 #endif
 
     float esum = exp_vec(RX, Y, x_max, N);
-    printf("imp esum = %f\n", esum);
 
 #ifdef COUNT_CYCLE
     count_end = read_perf_counter();
@@ -256,6 +254,7 @@ int main() {
     printf("Cycle count: %d\n", count_end - count_start);
 #endif
 
+    printf("imp esum = %f\n", esum);
     pass = 1;
     for (int i = 0; i < N; i++) {
         if (!fp_eq(Y_golden[i], Y[i], 1e-7)) {
