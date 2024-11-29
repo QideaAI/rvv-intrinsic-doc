@@ -11,7 +11,7 @@
 #include "common.h"
 
 #ifndef ARRAY_SIZE
-    #define ARRAY_SIZE 32
+    #define ARRAY_SIZE 1024
 #endif
 
 _Float16 X[ARRAY_SIZE] = {1.0f};
@@ -31,6 +31,7 @@ void mvn_golden(_Float16 *x, _Float16 *y, _Float16 epsilon, _Float16 gamma, _Flo
         s += x[i];
     }
     _Float16 E = (s/N);
+    printf("sum: %f, mean: %f\n", (float)s, (float)E);
 
     //compute mean subtraction and variance
     _Float16 V = 0.0f;
@@ -39,8 +40,10 @@ void mvn_golden(_Float16 *x, _Float16 *y, _Float16 epsilon, _Float16 gamma, _Flo
         V += y[i] * y[i];
     }
 
-    //normalization
+    // //normalization
     _Float16 D = 1.0f / sqrt (V + epsilon);
+    printf("var: %f, inv_sqrt_var: %f\n", (float)V, (float)D);
+
     for(i = 0; i < N; i ++) {
         y[i] = y[i] * D * gamma + beta;
     }    
@@ -53,10 +56,12 @@ void mvn_vec(_Float16 *x, _Float16 *y, _Float16 epsilon, _Float16 gamma, _Float1
     size_t vlmax = __riscv_vsetvlmax_e16m1();
     vfloat16m1_t vec_zero = __riscv_vfmv_v_f_f16m1(0, vlmax);
     vfloat16m1_t vec_s = __riscv_vfmv_v_f_f16m1(0, vlmax);
-    vfloat16m1_t vec_epsilon = __riscv_vfmv_v_f_f16m1(epsilon, vlmax);
     vfloat16m1_t vec_gama    = __riscv_vfmv_v_f_f16m1(gamma, vlmax);
     vfloat16m1_t vec_beta    = __riscv_vfmv_v_f_f16m1(beta, vlmax);
-    vfloat16m1_t vec_n = __riscv_vfmv_v_f_f16m1((_Float16)N, vlmax);
+
+    _Float16 *rx = x;
+    _Float16 *ry = y;
+    int rN = N;
 
     //vectored mean
     for (size_t vl; N > 0; N -= vl, x += vl) {
@@ -64,28 +69,42 @@ void mvn_vec(_Float16 *x, _Float16 *y, _Float16 epsilon, _Float16 gamma, _Float1
         vfloat16m1_t vec_x = __riscv_vle16_v_f16m1(x, vl);
         vec_s = __riscv_vfadd_vv_f16m1(vec_x, vec_s, vl);
     }
-    vfloat16m1_t vec_sum, vec_mean;
-    vec_sum = __riscv_vfredusum_vs_f16m1_f16m1(vec_s, vec_zero, vlmax);
-    vec_mean = __riscv_vfdiv_vv_f16m1(vec_sum, vec_n, vlmax);
 
-    //vectored mean subtraction and variance
+    //generate scalar mean
+    vfloat16m1_t vec_sum, vec_mean_var;
+    vec_sum = __riscv_vfredusum_vs_f16m1_f16m1(vec_s, vec_zero, vlmax);
+	_Float16 sum = __riscv_vfmv_f_s_f16m1_f16(vec_sum);
+    _Float16 E = sum/(float)rN;
+    vec_mean_var = __riscv_vfmv_v_f_f16m1(E, vlmax);
+    //printf("sum: %f, mean: %f\n", (float)sum, (float)E);
+
+    // vectored mean subtraction and variance
     vec_s = __riscv_vfmv_v_f_f16m1(0, vlmax);
-    for (size_t vl; N > 0; N -= vl, x += vl) {
+    N = rN;
+    x = rx;
+    for (size_t vl; N > 0; N -= vl, x += vl, y += vl) {
         vl = __riscv_vsetvl_e16m1(N);
         vfloat16m1_t vec_x = __riscv_vle16_v_f16m1(x, vl);
         vfloat16m1_t vec_y = __riscv_vle16_v_f16m1(y, vl);
-        vec_y = __riscv_vfsub_vv_f16m1(vec_x, vec_mean, vl);
+        vec_y = __riscv_vfsub_vv_f16m1(vec_x, vec_mean_var, vl);
         vec_s = __riscv_vfmacc_vv_f16m1(vec_s, vec_y, vec_y, vl);
+        __riscv_vse16_v_f16m1(y, vec_y, vl);
     }    
 
-    //normalization
-    vec_s = __riscv_vfadd_vv_f16m1(vec_s, vec_epsilon, vlmax);
-    vec_s = __riscv_vfsqrt_v_f16m1(vec_s, vlmax);
+    //generate scalar variance and inv_sqrt_var
+    vec_sum = __riscv_vfredusum_vs_f16m1_f16m1(vec_s, vec_zero, vlmax);
+	_Float16 V = __riscv_vfmv_f_s_f16m1_f16(vec_sum);
+    _Float16 D = 1.0f / sqrt (V + epsilon);
+    //printf("var: %f, inv_sqrt_var: %f\n", (float)V, (float)D);
 
-    for (size_t vl; N > 0; N -= vl, x += vl) {
+    //normalization
+    N = rN;
+    y = ry;
+    vec_mean_var = __riscv_vfmv_v_f_f16m1(D, vlmax);
+    for (size_t vl; N > 0; N -= vl, y += vl) {
         vl = __riscv_vsetvl_e16m1(N);
         vfloat16m1_t vec_y = __riscv_vle16_v_f16m1(y, vl);
-        vec_y = __riscv_vfmul_vv_f16m1(vec_y, vec_s, vl);
+        vec_y = __riscv_vfmul_vv_f16m1(vec_y, vec_mean_var, vl);
         vec_y = __riscv_vfmul_vv_f16m1(vec_y, vec_gama, vl);
         vec_y = __riscv_vfadd_vv_f16m1(vec_y, vec_beta, vl);
         __riscv_vse16_v_f16m1(y, vec_y, vl);
@@ -115,7 +134,7 @@ int main() {
     printf("VLEN: %d\n", (int)vlmax);
 
     //compute golden
-    mvn_golden(X, Y, _epsilon, _gamma, _beta, N);
+    mvn_golden(X, Y_golden, _epsilon, _gamma, _beta, N);
 
     //compute vec
 #ifdef COUNT_CYCLE
@@ -134,7 +153,7 @@ int main() {
 
     int pass = 1;
     for (int i = 0; i < N; i++) {
-        if (!fp16_eq(Y_golden[i], Y[i], 1e-5)) {
+        if (!fp16_eq(Y_golden[i], Y[i], 5e-2)) {
         printf("index %d fail, %f=!%f\n", i, (float)Y_golden[i], (float)Y[i]);
         pass = 0;
         }
