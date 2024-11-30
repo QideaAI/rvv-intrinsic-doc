@@ -15,7 +15,7 @@
 #include "common.h"
 
 #ifndef ARRAY_SIZE
-    #define ARRAY_SIZE 256
+    #define ARRAY_SIZE 2048
 #endif
 
  #define max(a,b) \
@@ -316,7 +316,7 @@ int main() {
     }
     if (pass) {
         for (i = 0; i < N; ++i) {
-            printf("index %d ref, %f, imp: %f\n", i, (float)Y_golden[i], (float)Y[i]);
+            //printf("index %d ref, %f, imp: %f\n", i, (float)Y_golden[i], (float)Y[i]);
         }
         printf("pass\n");
     }

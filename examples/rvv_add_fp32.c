@@ -7,13 +7,13 @@
     #define ARRAY_SIZE 2048
 #endif
 
-_Float16 A[ARRAY_SIZE] = {1.0f};
-_Float16 B[ARRAY_SIZE] = {1.0f};
-_Float16 C_golden[ARRAY_SIZE] = {0.f};
-_Float16 C[ARRAY_SIZE] = {0.f};
+float A[ARRAY_SIZE] = {1.0f};
+float B[ARRAY_SIZE] = {1.0f};
+float C_golden[ARRAY_SIZE] = {0.f};
+float C[ARRAY_SIZE] = {0.f};
 
 //golden scalar function
-void add_golden(_Float16 *a, _Float16 *b, _Float16 *c, int N) {
+void add_golden(float *a, float *b, float *c, int N) {
     int i;
     for(i = 0; i < N; i ++) {
         c[i] = a[i] + b[i];
@@ -21,21 +21,21 @@ void add_golden(_Float16 *a, _Float16 *b, _Float16 *c, int N) {
 }
 
 //vector elementwise add function
-void add_vec(_Float16 *a, _Float16 *b, _Float16 *c, int N) {
+void add_vec(float *a, float *b, float *c, int N) {
     for (size_t vl; N > 0; N -= vl, a += vl, b += vl, c += vl) {
-        vl = __riscv_vsetvl_e16m1(N);
-        vfloat16m1_t vec_a = __riscv_vle16_v_f16m1(a, vl);
-        vfloat16m1_t vec_b = __riscv_vle16_v_f16m1(b, vl);
+        vl = __riscv_vsetvl_e32m1(N);
+        vfloat32m1_t vec_a = __riscv_vle32_v_f32m1(a, vl);
+        vfloat32m1_t vec_b = __riscv_vle32_v_f32m1(b, vl);
 
-        vfloat16m1_t vec_c = __riscv_vfadd_vv_f16m1(vec_a, vec_b, vl);
-        __riscv_vse16_v_f16m1(c, vec_c, vl);
+        vfloat32m1_t vec_c = __riscv_vfadd_vv_f32m1(vec_a, vec_b, vl);
+        __riscv_vse32_v_f32m1(c, vec_c, vl);
     }
 }
 
-int fp16_eq(_Float16 reference, _Float16 actual, _Float16 relErr)
+int fp_eq(float reference, float actual, float relErr)
 {
   // if near zero, do absolute error instead.
-  _Float16 absErr = relErr * ((fabsf(reference) > relErr) ? fabsf(reference) : relErr);
+  float absErr = relErr * ((fabsf(reference) > relErr) ? fabsf(reference) : relErr);
   return fabsf(actual - reference) < absErr;
 }
 
@@ -52,7 +52,7 @@ int main() {
     }
 
     //check Vector size
-    size_t vlmax = __riscv_vsetvlmax_e16m1();
+    size_t vlmax = __riscv_vsetvlmax_e32m1();
     printf("VLEN: %d\n", (int)vlmax);
 
     //compute golden
@@ -75,7 +75,7 @@ int main() {
 
     int pass = 1;
     for (int i = 0; i < N; i++) {
-        if (!fp16_eq(C_golden[i], C[i], 5e-6)) {
+        if (!fp_eq(C_golden[i], C[i], 1e-15)) {
         printf("index %d fail, %f=!%f\n", i, (float)C_golden[i], (float)C[i]);
         pass = 0;
         }
