@@ -216,7 +216,7 @@ int main() {
     for (i = 0; i < N; ++i) {
         X[i] = (rand() / (float) RAND_MAX);
         RX[i] = X[i];
-        //printf("X: %f\n", (float)X[i]);
+        printf("X: %f\n", (float)X[i]);
     }
 
     //check Vector size
@@ -250,9 +250,6 @@ int main() {
     
 #ifdef COUNT_CYCLE
     count_end = read_perf_counter();
-    printf("Performance counter start: %d\n", count_start);
-    printf("Performance counter end: %d\n", count_end);
-    printf("Cycle count: %d\n", count_end - count_start);
 #endif
 
     printf("imp esum = %f\n", esum);
@@ -263,11 +260,24 @@ int main() {
         pass = 0;
         }
     }
-    if (pass) {
+
+    if (!pass) {
+        return -1;
+    } else {
         for (i = 0; i < N; ++i) {
-            //printf("Y %f\n", (float)Y[i]);
+            printf("index %d ref, %f, imp: %f\n", i, (float)X[i], (float)Y[i]);
         }
-        printf("pass\n");
+
+        float l2_dist = l2_distance_fp16(X, Y, N);
+        float cos_sim = cos_similarity_fp16(X, Y, N);
+        printf("pass!\n");
+        printf("L2 distance: %f, cos_similarity: %f\n", l2_dist, cos_sim);
+#ifdef COUNT_CYCLE
+        printf("Performance counter start: %d\n", count_start);
+        printf("Performance counter end: %d\n", count_end);
+        printf("Cycle count: %d\n", count_end - count_start);
+#endif
     }
-    return (pass == 0);
+
+    return 0;
 }

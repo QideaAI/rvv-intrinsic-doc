@@ -1,4 +1,3 @@
-#include "common.h"
 #include <riscv_vector.h>
 #include <float.h>
 #include "common.h"
@@ -48,7 +47,7 @@ int main() {
     for (i = 0; i < N; ++i) {
         A[i] = (rand() / (float) RAND_MAX);
         B[i] = (rand() / (float) RAND_MAX);
-        //printf("A: %f, B: %f\n", (float)A[i], (float)B[i]);
+        printf("A: %f, B: %f\n", (float)A[i], (float)B[i]);
     }
 
     //check Vector size
@@ -60,31 +59,41 @@ int main() {
 
     //compute vec
 #ifdef COUNT_CYCLE
-    int count_start, count_end;
+    int count_start = 0, count_end = 0;
     count_start = read_perf_counter();
 #endif
 
     add_vec(A, B, C, N);
-
+    
 #ifdef COUNT_CYCLE
     count_end = read_perf_counter();
-    printf("Performance counter start: %d\n", count_start);
-    printf("Performance counter end: %d\n", count_end);
-    printf("Cycle count: %d\n", count_end - count_start);
 #endif
 
     int pass = 1;
     for (int i = 0; i < N; i++) {
         if (!fp16_eq(C_golden[i], C[i], 5e-6)) {
-        printf("index %d fail, %f=!%f\n", i, (float)C_golden[i], (float)C[i]);
-        pass = 0;
+            printf("index %d fail, %f=!%f\n", i, (float)C_golden[i], (float)C[i]);
+            pass = 0;
         }
     }
-    if (pass) {
+
+    if (!pass) {
+        return -1;
+    } else {
         for (i = 0; i < N; ++i) {
-            //printf("C %f\n", (float)C[i]);
+            printf("index %d ref, %f, imp: %f\n", i, (float)C_golden[i], (float)C[i]);
         }
-        printf("pass\n");
+
+        float l2_dist = l2_distance_fp16(C_golden, C, N);
+        float cos_sim = cos_similarity_fp16(C_golden, C, N);
+        printf("pass!\n");
+        printf("L2 distance: %f, cos_similarity: %f\n", l2_dist, cos_sim);
+#ifdef COUNT_CYCLE
+        printf("Performance counter start: %d\n", count_start);
+        printf("Performance counter end: %d\n", count_end);
+        printf("Cycle count: %d\n", count_end - count_start);
+#endif
     }
-    return (pass == 0);
+
+    return 0;
 }

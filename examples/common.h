@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <float.h>
 
 #ifndef __COMMON__H__
 #define __COMMON__H__
@@ -122,6 +123,64 @@ unsigned long read_perf_counter(void)
   asm volatile ("rdinstret %0" : "=r" (counter_value));
 #endif
   return counter_value;
+}
+
+float l2_distance(float *x, float *y, int n) {
+	float l2_dist = 0.0f;
+
+	int i;
+	for(i = 0; i < n; i++) {
+		l2_dist += (x[i] - y[i]) * (x[i] - y[i]);
+	}
+
+	l2_dist = sqrt(l2_dist);
+
+	return l2_dist;
+}
+
+float cos_similarity(float *x, float *y, int n) {
+	float cos_sim = 0.0f;
+
+	int i;
+	float x_dot_y = 0.0f, x_norm = 0.0f, y_norm = 0.0f;
+	for(i = 0; i < n; i++) {
+		x_dot_y += x[i] * y[i];
+		x_norm += x[i] * x[i];
+		y_norm += y[i] * y[i];
+	}
+
+	cos_sim = x_dot_y / sqrt(x_norm * y_norm);
+	
+	return cos_sim;
+}
+
+_Float16 l2_distance_fp16(_Float16 *x, _Float16 *y, int n) {
+	float l2_dist = 0.0f;
+
+	int i;
+	for(i = 0; i < n; i++) {
+		l2_dist += (x[i] - y[i]) * (x[i] - y[i]);
+	}
+
+	l2_dist = sqrt(l2_dist);
+
+	return l2_dist;
+}
+
+_Float16 cos_similarity_fp16(_Float16 *x, _Float16 *y, int n) {
+	float cos_sim = 0.0f;
+
+	int i;
+	float x_dot_y = 0.0f, x_norm = 0.0f, y_norm = 0.0f;
+	for(i = 0; i < n; i++) {
+		x_dot_y += x[i] * y[i];
+		x_norm += x[i] * x[i];
+		y_norm += y[i] * y[i];
+	}
+
+	cos_sim = x_dot_y / sqrt(x_norm * y_norm);
+	
+	return cos_sim;
 }
 
 #endif
